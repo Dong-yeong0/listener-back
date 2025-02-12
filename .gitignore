@@ -267,3 +267,4 @@ pyrightconfig.json
 .vscode
 
 logs
+.env.*
