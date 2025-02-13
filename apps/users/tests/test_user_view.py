@@ -3,10 +3,64 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 
-from common.exception import UserValidationMessages
+from common.exception import LoginErrorMessages, UserValidationMessages
 
 from ..models import User
 
+
+class LoginTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create(
+            email="test@example.com",
+            password=make_password("Qwe!@#123"),
+            name="Test User"
+        )
+    def setUp(self):
+        self.url = reverse('users:login')
+    
+    def test_sign_in_view(self):
+        test_data = {
+            'email': 'test@example.com',
+            'password': 'Qwe!@#123',
+        }
+        response = self.client.post(self.url, data=test_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('token', response.json())
+        
+    def test_sign_in_with_wrong_email(self):
+        test_data = {
+            'email': 'wrong_email@example.com',
+            'password': 'Qwe!@#123',
+        }
+        response = self.client.post(self.url, data=test_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.json()['message'], LoginErrorMessages.WRONG_EMAIL_OR_PASSWORD)
+    
+    def test_sign_in_with_wrong_password(self):
+        test_data = {
+            'email': 'test@example.com',
+            'password': 'wrong_password',
+        }
+        response = self.client.post(self.url, data=test_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.json()['message'], LoginErrorMessages.WRONG_EMAIL_OR_PASSWORD)
+        
+    def test_sign_in_without_fields(self):
+        test_data = {
+            'password': 'Qwe!@#123',
+        }
+        response = self.client.post(self.url, data=test_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json()['message'], UserValidationMessages.EMAIL_REQUIRED)
+        
+        test_data = {
+            'email': 'test@example.com',
+        }
+        response = self.client.post(self.url, data=test_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json()['message'], UserValidationMessages.PASSWORD_REQUIRED)
+        
 
 class SignUpTestCase(TestCase):
     @classmethod
