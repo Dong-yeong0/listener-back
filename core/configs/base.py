@@ -11,7 +11,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
-import logging.config
 import os
 from pathlib import Path
 
@@ -38,6 +37,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'drf_yasg',
+    'apps.users'
 ]
 
 MIDDLEWARE = [
