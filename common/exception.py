@@ -19,7 +19,6 @@ class UserValidationMessages:
 
 class LoginErrorMessages:
     WRONG_EMAIL_OR_PASSWORD = '이메일 혹은 비밀번호를 확인해 주세요'
-    WITHOUT_FILED_ERROR = '이메일 혹은 비밀번호를 입력해 주세요.'
 
 
 class ExceptionLevel(Enum):
