@@ -3,10 +3,21 @@
 import os
 import sys
 
+import environ
+
 
 def main():
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
+    
+    ENVIRONMENT = os.environ.get('DJANGO_ENV', 'development')
+    if ENVIRONMENT == "production":
+        environ.Env().read_env('.env.production')
+    elif ENVIRONMENT == "development":
+        environ.Env().read_env('.env.development')
+    else:
+        raise ValueError("Invalid DJANGO_ENV value. Choose 'development' or 'production'.")
+    
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
