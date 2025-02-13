@@ -30,7 +30,9 @@ class LoginView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
-            data = serializer.validated_data
-            return Response(data, status=status.HTTP_200_OK)
+            token = serializer.validated_data
+            return Response(
+                {'status': True, 'token': token}, status=status.HTTP_200_OK
+            )
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
