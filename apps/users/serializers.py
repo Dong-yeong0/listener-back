@@ -1,11 +1,11 @@
 from django.contrib.auth.hashers import make_password
-from django.db.utils import IntegrityError
 from rest_framework import serializers, status
 from rest_framework.authtoken.models import Token
 
 from common.exception import (
     CustomException,
     CustomValidationError,
+    LoginErrorMessages,
     UserValidationMessages,
 )
 from common.utils import (
@@ -59,3 +59,30 @@ class UserSerializer(serializers.ModelSerializer):
             raise CustomValidationError(UserValidationMessages.PASSWORD_STRENGTH_INVALID)
 
         return password
+
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=False)
+    password = serializers.CharField(write_only=True, required=False)
+    
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+        if not email:
+            raise CustomValidationError(UserValidationMessages.EMAIL_REQUIRED)
+        if not password:
+            raise CustomValidationError(UserValidationMessages.PASSWORD_REQUIRED)
+        
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise CustomException(LoginErrorMessages.WRONG_EMAIL_OR_PASSWORD, status_code=401)
+        if not user.check_password(password):
+            raise CustomException(LoginErrorMessages.WRONG_EMAIL_OR_PASSWORD, status_code=401)
+        
+        token, created = Token.objects.get_or_create(user=user)
+        return {
+            'id': user.id,
+            'token': token.key,
+            'created': created
+        }
