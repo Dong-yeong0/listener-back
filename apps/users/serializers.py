@@ -1,8 +1,13 @@
 from django.contrib.auth.hashers import make_password
-from rest_framework import serializers
+from django.db.utils import IntegrityError
+from rest_framework import serializers, status
 from rest_framework.authtoken.models import Token
 
-from common.exception import CustomValidationError, UserValidationMessages
+from common.exception import (
+    CustomException,
+    CustomValidationError,
+    UserValidationMessages,
+)
 from common.utils import (
     is_password_str_num_included,
     is_valid_email_format,
@@ -22,10 +27,10 @@ class UserSerializer(serializers.ModelSerializer):
         }
     
     def create(self, validated_data):
-        user = User(**validated_data)
-        user.set_password(validated_data['password'])
-        user.save()
-        return user
+        password = validated_data.pop('password')
+        hashed_password = make_password(password)
+        validated_data['password'] = hashed_password
+        return super().create(validated_data)
     
     def validate(self, attrs):
         if 'email' not in attrs:
@@ -41,7 +46,7 @@ class UserSerializer(serializers.ModelSerializer):
         if not is_valid_email_format(value):
             raise CustomValidationError(UserValidationMessages.EMAIL_FORMAT_INVALID)
         if User.objects.filter(email=value).exists():
-            raise CustomValidationError(UserValidationMessages.EMAIL_ALREADY_EXISTS)
+            raise CustomException(message=UserValidationMessages.EMAIL_ALREADY_EXISTS, status_code=status.HTTP_409_CONFLICT)
 
         return value
     
