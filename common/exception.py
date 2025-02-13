@@ -59,9 +59,7 @@ class CustomException(Exception):
 
 class CustomValidationError(CustomException):
     def __init__(self, message):
-        self.message = message
-        self.status_code = 400
-        super().__init__(self.message)
+        super().__init__(message, status_code=400)
         
 
 def custom_exception_handler(exc, context):
@@ -70,11 +68,8 @@ def custom_exception_handler(exc, context):
     if isinstance(exc, CustomException):
         return Response({'message': exc.message}, status=exc.status_code)
     
-    if isinstance(exc, CustomValidationError):
-        return Response({'message': exc.message}, status=400)
-    
     if isinstance(exc, NotAuthenticated):
-        return Response({'message': '잘못된 접근입니다.'}, status=400)
+        return Response({'message': '잘못된 접근입니다.'}, status=401)
     
     if isinstance(exc, ValidationError):
         return Response({'message': str(exc)}, status=400)
