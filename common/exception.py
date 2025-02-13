@@ -9,7 +9,7 @@ from rest_framework.views import exception_handler
 class UserValidationMessages:
     EMAIL_REQUIRED = '이메일을 입력해 주세요.'
     PASSWORD_REQUIRED = '비밀번호를 입력해 주세요.'
-    EMAIL_REQUIRED = '이메일을 입력해 주세요.'
+    NAME_REQUIRED = '이름을 입력해 주세요.'
     EMAIL_ALREADY_EXISTS = '이미 사용 중인 이메일 입니다.'
     EMAIL_FORMAT_INVALID = '형식이 잘못되었습니다.'
     PASSWORD_STR_NUM_REQUIRED = '영문, 숫자를 포함해야합니다.'

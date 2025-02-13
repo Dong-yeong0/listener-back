@@ -28,12 +28,12 @@ class UserSerializer(serializers.ModelSerializer):
         return user
     
     def validate(self, attrs):
-        if 'name' not in attrs:
+        if 'email' not in attrs:
             raise CustomValidationError(UserValidationMessages.EMAIL_REQUIRED)
         if 'password' not in attrs:
             raise CustomValidationError(UserValidationMessages.PASSWORD_REQUIRED)
-        if 'email' not in attrs:
-            raise CustomValidationError(UserValidationMessages.EMAIL_REQUIRED)
+        if 'name' not in attrs:
+            raise CustomValidationError(UserValidationMessages.NAME_REQUIRED)
         
         return attrs
     
