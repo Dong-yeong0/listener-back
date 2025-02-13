@@ -11,7 +11,7 @@ class UserValidationMessages:
     PASSWORD_REQUIRED = '비밀번호를 입력해 주세요.'
     NAME_REQUIRED = '이름을 입력해 주세요.'
     EMAIL_ALREADY_EXISTS = '이미 사용 중인 이메일 입니다.'
-    EMAIL_FORMAT_INVALID = '형식이 잘못되었습니다.'
+    EMAIL_FORMAT_INVALID = '형식을 확인해주세요.'
     PASSWORD_STR_NUM_REQUIRED = '영문, 숫자를 포함해야합니다.'
     PASSWORD_LENGTH_INVALID = '8~16자로 입력하세요.'
     PASSWORD_STRENGTH_INVALID = '소문자, 대문자, 숫자, 특수문자가 포함되어야 합니다.'
