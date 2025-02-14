@@ -1,4 +1,5 @@
 import os
+import socket
 
 import environ
 
@@ -6,7 +7,7 @@ from .base import *
 
 env = environ.Env()
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", socket.gethostbyname(socket.gethostname())]
 
 # 개발 환경에서는 CORS 모든 도메인 허용
 CORS_ALLOW_ALL_ORIGINS = True
