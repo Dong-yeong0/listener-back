@@ -5,7 +5,7 @@ from rest_framework import status
 
 from common.exception import LoginErrorMessages, UserValidationMessages
 
-from ..models import User
+from ..models import User, UserDevice, UserToken
 
 
 class LoginTestCase(TestCase):
@@ -13,22 +13,34 @@ class LoginTestCase(TestCase):
     def setUpTestData(cls):
         cls.user = User.objects.create(
             email="test@example.com",
-            password=make_password("Qwe!@#123"),
-            name="Test User"
+            password="Qwe!@#123",
+            name="Test User",
+            device_id="test_device_id",
         )
+        cls.user_device = UserDevice.objects.create(
+            user=cls.user,
+            device_id=cls.user.device_id,
+        )
+        cls.user_token = UserToken.objects.create(
+            user=cls.user,
+            device_id=cls.user_device,
+            key='test_token',
+        )
+        
     def setUp(self):
         self.url = reverse('users:login')
     
-    def test_sign_in_view(self):
+    def test_login_view(self):
         test_data = {
             'email': 'test@example.com',
             'password': 'Qwe!@#123',
+            'device_id': 'test_device_id',
         }
         response = self.client.post(self.url, data=test_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('token', response.json())
         
-    def test_sign_in_with_wrong_email(self):
+    def test_login_with_wrong_email(self):
         test_data = {
             'email': 'wrong_email@example.com',
             'password': 'Qwe!@#123',
@@ -37,7 +49,7 @@ class LoginTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(response.json()['message'], LoginErrorMessages.WRONG_EMAIL_OR_PASSWORD)
     
-    def test_sign_in_with_wrong_password(self):
+    def test_login_with_wrong_password(self):
         test_data = {
             'email': 'test@example.com',
             'password': 'wrong_password',
@@ -46,7 +58,7 @@ class LoginTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(response.json()['message'], LoginErrorMessages.WRONG_EMAIL_OR_PASSWORD)
         
-    def test_sign_in_without_fields(self):
+    def test_login_without_fields(self):
         test_data = {
             'password': 'Qwe!@#123',
         }
@@ -68,16 +80,20 @@ class SignUpTestCase(TestCase):
         cls.user = User.objects.create(
             email="duplicated@example.com",
             password=make_password("Qwe!@#123"),
-            name="Duplicated User"
+            name="Duplicated User",
+            device_id="test1",
         )
     
     def setUp(self):
         self.url = reverse('users:sign-up')
     def test_sign_up_view(self):
         test_data = {
-            'email': 'test@example.com',
-            'password': 'Qwe!@#123',
-            'name': 'Test User'
+            "email": "testuser@example.com",
+            "password": "Qwe!@#123",
+            "name": "Test User",
+            "device_id": "1111",
+            "device_os": "test",
+            "device_os_version": "test2"
         }
         response = self.client.post(self.url, data=test_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -87,7 +103,10 @@ class SignUpTestCase(TestCase):
         test_data = {
             'email': 'duplicated@example.com',
             'password': 'Qwe!@#123',
-            'name': 'Duplicated User'
+            'name': 'Duplicated User',
+            "device_id": "test",
+            "device_os": "test",
+            "device_os_version": "test"
         }
         response = self.client.post(self.url, data=test_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
@@ -125,33 +144,64 @@ class TokenCheckTestView(TestCase):
     def setUpTestData(cls):
         cls.user = User.objects.create(
             email="test@example.com",
-            password=make_password("Qwe!@#123"),
-            name="Test User"
+            password="Qwe!@#123",
+            name="Test User",
+            device_id='test1'
+        )
+        cls.user_device = UserDevice.objects.create(
+            user=cls.user,
+            device_id="test1",
         )
         
     def setUp(self):
-        self.url = reverse('users:check-token')
+        self.token_check_api_url = reverse('users:check-token')
+        self.login_api_url = reverse('users:login')
         
     def test_token_check_valid(self):
         # login
         login_response = self.client.post(
-            reverse('users:login'),
-            data={'email': 'test@example.com', 'password': 'Qwe!@#123'},
+            self.login_api_url,
+            data={'email': 'test@example.com', 'password': 'Qwe!@#123', 'device_id': 'test1'},
+            format='json'
+        )
+        self.assertEqual(login_response.status_code, status.HTTP_200_OK)
+        token = login_response.json()['token']
+        response = self.client.get(
+            self.token_check_api_url,
+            HTTP_AUTHORIZATION=f'Token {token}',
+            format='json'
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('user', response.json())
+        
+    def test_token_check_invalid(self):
+        response = self.client.get(self.token_check_api_url, headers={'Content-Type': 'json'}, format='json') # Not in token
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_token_chagned(self):
+        # login
+        login_response = self.client.post(
+            self.login_api_url,
+            data={'email': 'test@example.com', 'password': 'Qwe!@#123', 'device_id': 'test1'},
             format='json'
         )
         self.assertEqual(login_response.status_code, status.HTTP_200_OK)
         token = login_response.json()['token']
         
-        # # check token
-        response = self.client.get(self.url, headers={'Content-Type': 'json', 'Authorization':  f'Token {token}'}, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('user', response.json())
+        # change device_id
+        self.user.device_id = 'test2'
+        self.user.save()
         
-    def test_token_check_invalid(self):
-        response = self.client.get(self.url, headers={'Content-Type': 'json'}, format='json') # Not in token
+        # check token with new device_id
+        response = self.client.get(
+            self.token_check_api_url,
+            HTTP_AUTHORIZATION=f'Token {token}',
+            format='json'
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertEqual(response.json()['message'], '잘못된 접근입니다.')
-        
+        self.assertEqual(response.json()['device_changed'], True)
+        self.assertEqual(response.json()['message'], '로그인 기기가 변경 되었습니다.\n다시 로그인 해주세요.')
+
 
 class LogoutTestCase(TestCase):
     @classmethod
@@ -159,7 +209,8 @@ class LogoutTestCase(TestCase):
         cls.user = User.objects.create(
             email="test@example.com",
             password=make_password("Qwe!@#123"),
-            name="Test User"
+            name="Test User",
+            device_id="test1",
         )
         
     def setUp(self):
