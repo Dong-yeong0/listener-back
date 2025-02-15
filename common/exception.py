@@ -15,6 +15,7 @@ class UserValidationMessages:
     PASSWORD_STR_NUM_REQUIRED = '영문, 숫자를 포함해야합니다.'
     PASSWORD_LENGTH_INVALID = '8~16자로 입력하세요.'
     PASSWORD_STRENGTH_INVALID = '소문자, 대문자, 숫자, 특수문자가 포함되어야 합니다.'
+    DEVICE_ID_REQUIRED = '디바이스 정보가 필요합니다.'
 
 
 class LoginErrorMessages:
@@ -73,7 +74,6 @@ def custom_exception_handler(exc, context):
     if isinstance(exc, ValidationError):
         return Response({'message': str(exc)}, status=400)
         
-    # Now add the HTTP status code to the response.
     if response is not None:
         response.data['status_code'] = response.status_code
         
